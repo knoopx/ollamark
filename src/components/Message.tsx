@@ -20,15 +20,7 @@ export const Message = ({ role, model, children }: MessageProps) => {
         </Text>
         {role == "assistant" && <Text color={theme.muted}>{model}</Text>}
       </Box>
-      <Box
-        flexDirection="column"
-        borderStyle="round"
-        borderColor={theme.muted}
-        paddingX={2}
-        paddingY={1}
-      >
-        {children}
-      </Box>
+      <Box flexDirection="column">{children}</Box>
     </Box>
   )
 }
