@@ -57,9 +57,8 @@ const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
     .map(({ name }) => name)
     .find((name) => name.toLowerCase().includes(options.model?.toLowerCase()))
 
-  let model: string
   if (match) {
-    model = match
+    options.model = match
   } else {
     return (
       <Text>
@@ -73,7 +72,7 @@ const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
   async function run() {
     const response = await ollama.chat({
       messages: conversation,
-      model,
+      model: options.model,
       format: options.json ? "json" : undefined,
       options: {
         temperature: options.temp,
