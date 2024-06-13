@@ -25,7 +25,7 @@ type RunOptions = {
   system?: string
   json?: boolean
   html?: boolean
-  response?: boolean
+  raw?: boolean
   temp?: number
   numPred?: number
   ctx?: number
@@ -42,6 +42,7 @@ type RunProps = {
 const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
   let conversation: (RendererProps & Pick<MessageProps, "role">)[] = []
   let [buffer, setBuffer] = useState("")
+  let [isFinished, setFinished] = useState(false)
 
   if (options.system)
     conversation.push({ role: "system", content: options.system! })
@@ -85,15 +86,20 @@ const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
     for await (const chunk of response) {
       setBuffer((buffer: string) => buffer + chunk.message.content)
     }
+
+    setFinished(true)
   }
 
   useEffect(() => {
     run()
   }, [])
 
-  const bufferMime = useMime(buffer)
-  if (options.response || options.json)
-    return <Renderer content={buffer} mime={bufferMime} />
+  if (options.raw || options.json) {
+    if (!isFinished) {
+      return null
+    }
+    return <Text>{buffer}</Text>
+  }
 
   return (
     <Box flexDirection="column" flexWrap="wrap" width={options.printWidth}>
@@ -130,7 +136,7 @@ export default (ollamark: Command) =>
     .option("-t, --temp <value>", "temperature")
     .option("-n, --num-pred <value>", "number of predictions")
     .option("-C, --ctx <value>", "context length")
-    .option("-r, --response", "only print response")
+    .option("-r, --raw", "output the raw response")
     .option("-W, --print-width <chars>", "print width", "100")
     .action(async (parts: string[], options: RunOptions) => {
       const models = await ollama.list()
