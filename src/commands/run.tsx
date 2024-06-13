@@ -47,12 +47,14 @@ const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
   if (options.system)
     conversation.push({ role: "system", content: options.system! })
 
+  if (stdin) conversation.push({ role: "user", ...stdin })
+
+  if (prompt) {
   conversation.push({
     role: "user",
     content: prompt,
   })
-
-  if (stdin) conversation.push({ role: "user", ...stdin })
+  }
 
   const match = models
     .map(({ name }) => name)
