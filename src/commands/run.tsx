@@ -23,6 +23,7 @@ const Renderer = ({ content, mime }: RendererProps) => {
 type RunOptions = {
   model: string
   system?: string
+  whole?: boolean
   json?: boolean
   html?: boolean
   raw?: boolean
@@ -105,6 +106,7 @@ const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
 
   return (
     <Box flexDirection="column" flexWrap="wrap" width={options.printWidth}>
+      {options.whole && (
       <Static items={conversation}>
         {(props, i) => (
           <Message key={i} {...props} {...options}>
@@ -112,6 +114,7 @@ const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
           </Message>
         )}
       </Static>
+      )}
 
       <Message key="buffer" role="assistant" {...options}>
         {buffer ? (
@@ -140,6 +143,7 @@ export default (ollamark: Command) =>
     .option("-C, --ctx <value>", "context length")
     .option("-r, --raw", "output the raw response")
     .option("-W, --print-width <chars>", "print width", "100")
+    .option("--whole", "print the whole conversation")
     .action(async (parts: string[], options: RunOptions) => {
       const models = await ollama.list()
       const stdin = await readTTYStream(process.stdin, !!options.html)
