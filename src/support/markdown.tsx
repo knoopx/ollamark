@@ -4,7 +4,7 @@ import {
   Transform,
   type TextProps,
   type BoxProps,
-} from "ink"
+} from "ink";
 
 import type {
   List,
@@ -15,7 +15,7 @@ import type {
   Table,
   TableRow,
   Text,
-} from "mdast"
+} from "mdast";
 
 import {
   Theme,
@@ -23,28 +23,28 @@ import {
   useTheme,
   highlightTheme,
   ThemeContext,
-} from "./theming"
+} from "./theming";
 
-import { compact } from "mdast-util-compact"
-import { fromMarkdown } from "mdast-util-from-markdown"
-import { gfm } from "micromark-extension-gfm"
-import { gfmFromMarkdown, gfmToMarkdown } from "mdast-util-gfm"
-import { highlight, supportsLanguage } from "cli-highlight"
-import { jsx } from "react/jsx-runtime"
-import { selectAll } from "unist-util-select"
-import { toMarkdown } from "mdast-util-to-markdown"
-import { unified } from "unified"
-import { visit } from "unist-util-visit"
-import InkLink from "ink-link"
-import React, { useContext } from "react"
-import rehypeParse from "rehype-parse"
-import rehypeRemark from "rehype-remark"
-import remarkEmoji from "remark-emoji"
-import remarkGfm from "remark-gfm"
-import remarkMath from "remark-math"
-import remarkStringify from "remark-stringify"
-import tinycolor from "tinycolor2"
-import type { ElementType, ReactElement, ReactNode } from "react"
+import { compact } from "mdast-util-compact";
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { gfm } from "micromark-extension-gfm";
+import { gfmFromMarkdown, gfmToMarkdown } from "mdast-util-gfm";
+import { highlight, supportsLanguage } from "cli-highlight";
+import { jsx } from "react/jsx-runtime";
+import { selectAll } from "unist-util-select";
+import { toMarkdown } from "mdast-util-to-markdown";
+import { unified } from "unified";
+import { visit } from "unist-util-visit";
+import InkLink from "ink-link";
+import React, { useContext } from "react";
+import rehypeParse from "rehype-parse";
+import rehypeRemark from "rehype-remark";
+import remarkEmoji from "remark-emoji";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import remarkStringify from "remark-stringify";
+import tinycolor from "tinycolor2";
+import type { ElementType, ReactElement, ReactNode } from "react";
 
 export function html2md(corpus: string): string {
   return String(
@@ -55,49 +55,49 @@ export function html2md(corpus: string): string {
       .use(remarkEmoji)
       .use(remarkMath)
       .use(remarkStringify)
-      .processSync(corpus),
-  )
+      .processSync(corpus)
+  );
 }
 
 export function mdast2md(tree: MdastNodes) {
-  return toMarkdown(tree, { extensions: [gfmToMarkdown()] })
+  return toMarkdown(tree, { extensions: [gfmToMarkdown()] });
 }
 
 export function md2mdast(corpus: string) {
   const tree = fromMarkdown(corpus, {
     extensions: [gfm()],
     mdastExtensions: [gfmFromMarkdown()],
-  })
-  compact(tree)
-  return tree
+  });
+  compact(tree);
+  return tree;
 }
 
-const TextStyleContext = React.createContext<TextProps>({})
+const TextStyleContext = React.createContext<TextProps>({});
 const TextStyle = ({ children, ...props }: TextProps) => (
   <TextStyleContext.Provider value={props}>
     {children}
   </TextStyleContext.Provider>
-)
+);
 
 const styled =
   (
-    fn: ({ theme, context }: { theme: Theme; context: TextProps }) => TextProps,
+    fn: ({ theme, context }: { theme: Theme; context: TextProps }) => TextProps
   ) =>
   ({ children }: { children: ReactNode }) => {
-    const theme = useTheme()
-    const context = useContext(TextStyleContext)
-    const props = fn({ theme, context })
-    return <TextStyle {...props}>{children}</TextStyle>
-  }
+    const theme = useTheme();
+    const context = useContext(TextStyleContext);
+    const props = fn({ theme, context });
+    return <TextStyle {...props}>{children}</TextStyle>;
+  };
 
 const MdText = ({ value, ...props }: { value: string }) => {
-  const contextProps = useContext(TextStyleContext)
+  const contextProps = useContext(TextStyleContext);
   return (
     <InkText {...contextProps} {...props}>
       {value}
     </InkText>
-  )
-}
+  );
+};
 
 export const MdRoot = ({
   children,
@@ -109,30 +109,31 @@ export const MdRoot = ({
         {children}
       </InkBox>
     </TextStyle>
-  )
-}
+  );
+};
 
 const MdInlineCode = ({ value }: { value: string }) => (
   <InkText color={useTheme().inlineCode}>`{value}`</InkText>
-)
+);
 const MdEmphasis = styled(({ context }) => ({
   italic: true,
-  color: tinycolor(context.color).brighten(25).toString(),
-}))
+  color: useTheme().emphasis,
+}));
 const MdStrong = styled(({ context }) => {
   return {
     bold: true,
-    color: tinycolor(context.color).darken(5).toHexString(),
-  }
-})
+    color: useTheme().strong,
+    // color: tinycolor(context.color).darken(5).toHexString(),
+  };
+});
 const MdDelete = styled(() => ({
   strikethrough: true,
   dimColor: true,
-}))
+}));
 
 const MdHeading = ({ depth, ...n }: { depth: number; children: ReactNode }) => {
-  const theme = useTheme()
-  const style = { bold: true, underline: true, color: theme.heading }
+  const theme = useTheme();
+  const style = { bold: true, underline: true, color: theme.heading };
   return (
     <InkBox>
       <TextStyle {...style}>
@@ -140,51 +141,51 @@ const MdHeading = ({ depth, ...n }: { depth: number; children: ReactNode }) => {
         {n.children}
       </TextStyle>
     </InkBox>
-  )
-}
+  );
+};
 
 const MdLink = ({
   url,
   ...node
 }: { url: string } & { children: ReactNode }) => {
-  const theme = useTheme()
+  const theme = useTheme();
   return (
     <InkLink url={url}>
       <TextStyle color={theme.link}>{node.children}</TextStyle>
     </InkLink>
-  )
-}
+  );
+};
 
 const MdParagraph = ({ children }: { children: ReactNode }) => {
-  const style = useContext(TextStyleContext)
+  const style = useContext(TextStyleContext);
   return (
     <InkText {...style}>
       <Transform transform={(x) => x.trim()}>{children}</Transform>
     </InkText>
-  )
-}
+  );
+};
 
 const MdList = ({ children, ...props }: { children: ReactNode }) => {
   return (
     <InkBox {...props} paddingLeft={2} flexDirection="column">
       {children}
     </InkBox>
-  )
-}
+  );
+};
 
 const MdListItem = ({ children }: { children: ReactNode }) => {
-  const theme = useTheme()
+  const theme = useTheme();
 
   return (
     <InkBox>
       <InkText color={theme.listItem}>• </InkText>
       <InkBox flexDirection="column">{children}</InkBox>
     </InkBox>
-  )
-}
+  );
+};
 
 const MdBlockQuote = ({ children }: { children: ReactNode }) => {
-  const theme = useTheme()
+  const theme = useTheme();
 
   return (
     <TextStyleContext.Provider
@@ -207,12 +208,12 @@ const MdBlockQuote = ({ children }: { children: ReactNode }) => {
         <TextStyle color={theme.blockquote}>{children}</TextStyle>
       </InkBox>
     </TextStyleContext.Provider>
-  )
-}
+  );
+};
 
 const MdCode = ({ lang, value }: { lang: string; value: string }) => {
-  const theme = useTheme()
-  const language = supportsLanguage(lang) ? lang : "text"
+  const theme = useTheme();
+  const language = supportsLanguage(lang) ? lang : "text";
 
   return (
     <InkBox flexDirection="column" marginLeft={1}>
@@ -237,8 +238,8 @@ const MdCode = ({ lang, value }: { lang: string; value: string }) => {
         </InkText>
       </InkBox>
     </InkBox>
-  )
-}
+  );
+};
 
 const MdThematicBreak = () => {
   return (
@@ -249,12 +250,12 @@ const MdThematicBreak = () => {
       borderRight={false}
       borderLeft={false}
     />
-  )
-}
+  );
+};
 
 const MdBreak = () => {
-  return <InkText>{"\n"}</InkText>
-}
+  return <InkText>{"\n"}</InkText>;
+};
 
 const MdImage = ({ alt }: { url: string; alt?: string }) => {
   // TODO: SIGSEGV, need to investigate
@@ -262,10 +263,10 @@ const MdImage = ({ alt }: { url: string; alt?: string }) => {
   //   return <Image preserveAspectRatio src={url} alt={alt} width="50%" />
   // }
   if (alt)
-    return <InkText color={useTheme().muted}>{`(<image> ${alt})`}</InkText>
+    return <InkText color={useTheme().muted}>{`(<image> ${alt})`}</InkText>;
 
-  return null
-}
+  return null;
+};
 
 const mdastMap = {
   root: MdRoot,
@@ -287,67 +288,67 @@ const mdastMap = {
   html: () => {
     // TODO: what to do?
   },
-}
+};
 
 function textContent(node: Node) {
   return selectAll("text", node)
     .map((x) => (x as Text).value)
     .join()
-    .trim()
+    .trim();
 }
 
 function removeEmptyTableRows(node: Table) {
   visit(node, (n, index, parent) => {
     if (n.type == "tableRow") {
-      const tableRow = n as TableRow
+      const tableRow = n as TableRow;
       if (!textContent(tableRow)) {
-        const table = parent as Table
-        table.children.splice(index!, 1)
+        const table = parent as Table;
+        table.children.splice(index!, 1);
       }
     }
-  })
+  });
 }
 
 function removeEmptyListItems(node: List) {
   visit(node, (n, index, parent) => {
     if (n.type == "listItem") {
-      const listItem = n as ListItem
+      const listItem = n as ListItem;
       if (!textContent(listItem)) {
-        const list = parent as List
-        list.children.splice(index!, 1)
+        const list = parent as List;
+        list.children.splice(index!, 1);
       }
     }
-  })
+  });
 }
 
 export function toInk(text: string, theme: Theme = defaultTheme) {
-  const mdastTree = md2mdast(text)
+  const mdastTree = md2mdast(text);
 
   const toJSX = (node: Node, i: number): ReactElement => {
     if (node.type == "table") {
-      removeEmptyTableRows(node as Table)
+      removeEmptyTableRows(node as Table);
       // delegate table rendering to mdast
-      return <InkText key={i}>{mdast2md(node as MdastNodes)}</InkText>
+      return <InkText key={i}>{mdast2md(node as MdastNodes)}</InkText>;
     }
 
     if (node.type == "list") {
-      removeEmptyListItems(node as List)
+      removeEmptyListItems(node as List);
     }
 
     if (node.type in mdastMap) {
-      const { type, children, position, ...props } = node as Parent
-      const key = type as keyof typeof mdastMap
+      const { type, children, position, ...props } = node as Parent;
+      const key = type as keyof typeof mdastMap;
       return jsx(
         mdastMap[key] as ElementType,
         { ...props, children: children?.map(toJSX) },
-        i,
-      )
+        i
+      );
     }
-    throw new Error(`Unknown type: ${node.type}`)
-  }
+    throw new Error(`Unknown type: ${node.type}`);
+  };
   return (
     <ThemeContext.Provider value={theme}>
       {mdastTree.children.map(toJSX)}
     </ThemeContext.Provider>
-  )
+  );
 }
