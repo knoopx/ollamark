@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import ollama, { type ModelResponse } from "ollama";
 import Spinner from "ink-spinner";
 import { highlight, supportsLanguage } from "cli-highlight";
-import fs from "fs";
+import fs from "node:fs";
 
 type RendererProps = { content: string; mime?: string };
 const Renderer = ({ content, mime = "md" }: RendererProps) => {
@@ -61,8 +61,8 @@ const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
     if (prompt == "-") {
       prompt = stdin.content;
     } else {
-      prompt = `${stdin.content}\n\n${prompt}`;
-      // prompt += `\n\n${stdin.content}`
+      // prompt = `${stdin.content}\n\n${prompt}`;
+      prompt += `\n\n${stdin.content}`
     }
   }
 

@@ -30,7 +30,6 @@ import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfm } from "micromark-extension-gfm";
 import { gfmFromMarkdown, gfmToMarkdown } from "mdast-util-gfm";
 import { highlight, supportsLanguage } from "cli-highlight";
-import { jsx } from "react/jsx-runtime";
 import { selectAll } from "unist-util-select";
 import { toMarkdown } from "mdast-util-to-markdown";
 import { unified } from "unified";
@@ -43,7 +42,6 @@ import remarkEmoji from "remark-emoji";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkStringify from "remark-stringify";
-import tinycolor from "tinycolor2";
 import type { ElementType, ReactElement, ReactNode } from "react";
 
 export function html2md(corpus: string): string {
@@ -321,6 +319,8 @@ function removeEmptyListItems(node: List) {
   });
 }
 
+import { jsx as j } from "react/jsx-runtime";
+
 export function toInk(text: string, theme: Theme = defaultTheme) {
   const mdastTree = md2mdast(text);
 
@@ -338,7 +338,7 @@ export function toInk(text: string, theme: Theme = defaultTheme) {
     if (node.type in mdastMap) {
       const { type, children, position, ...props } = node as Parent;
       const key = type as keyof typeof mdastMap;
-      return jsx(
+      return j(
         mdastMap[key] as ElementType,
         { ...props, children: children?.map(toJSX) },
         i
