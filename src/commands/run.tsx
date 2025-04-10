@@ -58,11 +58,10 @@ const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
   }
 
   if (stdin) {
-    if (prompt == "-") {
-      prompt = stdin.content;
+    if (prompt.length) {
+      prompt = `${prompt}\n\n${stdin.content}`;
     } else {
-      // prompt = `${stdin.content}\n\n${prompt}`;
-      prompt += `\n\n${stdin.content}`
+      prompt = stdin.content;
     }
   }
 
