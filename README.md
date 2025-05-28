@@ -7,11 +7,13 @@ Install ollamark using your preferred package manager (`bun` is recommended).
 ### Installation
 
 #### Using npm/bun
+
 ```bash
 npm install -g https://github.com/knoopx/ollamark
 ```
 
 #### Using Nix Flakes
+
 ```bash
 # Try without installing
 nix run github:knoopx/ollamark -- --help
@@ -23,6 +25,7 @@ nix profile install github:knoopx/ollamark
 #### NixOS Integration
 
 Add to your flake inputs:
+
 ```nix
 {
   inputs.ollamark.url = "github:knoopx/ollamark";
@@ -30,18 +33,11 @@ Add to your flake inputs:
 ```
 
 **Using the overlay:**
+
 ```nix
 {
   nixpkgs.overlays = [ inputs.ollamark.overlays.default ];
   environment.systemPackages = [ pkgs.ollamark ];
-}
-```
-
-**Using the NixOS module:**
-```nix
-{
-  imports = [ inputs.ollamark.nixosModules.default ];
-  programs.ollamark.enable = true;
 }
 ```
 
