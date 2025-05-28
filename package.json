@@ -14,7 +14,7 @@
     "dist"
   ],
   "scripts": {
-    "dist": "bun build src/ollamark.tsx --outdir dist --target node --sourcemap -e '@vscode/vscode-languagedetection' -e 'chalk' -e 'cli-highlight' -e 'commander' -e 'ink*' -e 'lodash-es' -e 'mdast*' -e 'ollama' -e 'react*' -e 'rehype*' -e 'remark*' -e 'tinycolor2' -e 'unist*'  -e 'micromark*' -e 'unified'",
+    "dist": "bun build src/ollamark.tsx --outdir dist --target node --sourcemap --minify",
     "prepublish": "bun dist"
   },
   "devDependencies": {

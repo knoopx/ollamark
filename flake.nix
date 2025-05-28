@@ -58,7 +58,6 @@
           installPhase = ''
             mkdir -p $out/share/ollamark
             cp -r dist/ollamark.* $out/share/ollamark/
-            cp -r ${deps}/node_modules $out/share/ollamark/
           '';
 
           postInstall = ''
