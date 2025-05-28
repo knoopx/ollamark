@@ -94,21 +94,5 @@
       overlays.default = final: prev: {
         ollamark = self.packages.${final.system}.ollamark;
       };
-
-      nixosModules.default = {
-        config,
-        lib,
-        pkgs,
-        ...
-      }: {
-        options.programs.ollamark = {
-          enable = lib.mkEnableOption "ollamark";
-          package = lib.mkPackageOption pkgs "ollamark" {};
-        };
-
-        config = lib.mkIf config.programs.ollamark.enable {
-          environment.systemPackages = [config.programs.ollamark.package];
-        };
-      };
     };
 }
