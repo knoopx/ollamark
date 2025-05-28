@@ -1,8 +1,7 @@
 import { Box, Static, Text, render } from "ink";
 import { Command } from "commander";
-import { Message, type MessageProps } from "../components/Message";
+import { Message } from "../components/Message";
 import { readTTYStream } from "../support/util";
-import { guessMime } from "../support/mime";
 import { MdRoot, toInk } from "../support/markdown";
 import { useEffect, useState } from "react";
 import ollama, { type ModelResponse } from "ollama";
@@ -34,97 +33,187 @@ type RunOptions = {
   printWidth?: number;
 };
 
-type RunProps = {
-  stdin: RendererProps | undefined;
-  prompt: string;
-  options: RunOptions;
-  models: ModelResponse[];
-};
+abstract class BaseRunner {
+  protected conversation: {
+    role: "system" | "user" | "assistant";
+    content: string;
+  }[] = [];
+  protected modelName: string;
 
-const RunCommand = ({ stdin, prompt, options, models }: RunProps) => {
-  let conversation: (RendererProps & Pick<MessageProps, "role">)[] = [];
-  let [buffer, setBuffer] = useState("");
+  constructor(
+    protected prompt: string,
+    protected stdin: string | undefined,
+    protected options: RunOptions,
+    protected models: ModelResponse[]
+  ) {
+    this.prepareConversation();
+    this.modelName = this.findModel();
+  }
 
-  if (options.system) {
-    let system = options.system!;
-    if (fs.existsSync(system)) {
-      system = fs.readFileSync(system, "utf8");
+  private prepareConversation(): void {
+    if (this.options.system) {
+      let system = this.options.system;
+      if (fs.existsSync(system)) {
+        system = fs.readFileSync(system, "utf8");
+      }
+      this.conversation.push({ role: "system", content: system });
     }
-    conversation.push({ role: "system", content: system });
-  }
 
-  if (fs.existsSync(prompt)) {
-    prompt = fs.readFileSync(prompt, "utf8");
-  }
-
-  if (stdin) {
-    if (prompt.length) {
-      prompt = `${prompt}\n\n${stdin.content}`;
-    } else {
-      prompt = stdin.content;
+    let prompt = this.prompt;
+    if (fs.existsSync(prompt)) {
+      prompt = fs.readFileSync(prompt, "utf8");
     }
+
+    if (this.stdin) {
+      if (prompt.length) {
+        prompt = `${prompt}\n\n${this.stdin}`;
+      } else {
+        prompt = this.stdin;
+      }
+    }
+
+    this.conversation.push({
+      role: "user",
+      content: prompt,
+    });
   }
 
-  conversation.push({
-    role: "user",
-    content: prompt,
-  });
+  private findModel(): string {
+    const match = this.models
+      .map(({ name }) => name)
+      .find((name) =>
+        name.toLowerCase().includes(this.options.model?.toLowerCase())
+      );
 
-  const match = models
-    .map(({ name }) => name)
-    .find((name) => name.toLowerCase().includes(options.model?.toLowerCase()));
+    if (!match) {
+      const message = this.options.model
+        ? `No model matches ${this.options.model}`
+        : `No model specified`;
 
-  if (match) {
-    options.model = match;
-  } else {
-    return (
-      <Text>
-        {options.model
-          ? `No model matches ${options.model}`
-          : `No model specified`}
-      </Text>
-    );
+      this.handleError(message);
+    }
+
+    return match!;
   }
 
-  async function run() {
-    const response = await ollama.chat({
-      messages: conversation,
-      model: options.model,
-      format: options.json ? "json" : undefined,
+  protected abstract handleError(message: string): void;
+
+  protected async createChatResponse() {
+    return await ollama.chat({
+      messages: this.conversation,
+      model: this.modelName,
+      format: this.options.json ? "json" : undefined,
       options: {
-        temperature: options.temp,
-        num_predict: options.numPred,
-        num_ctx: options.ctx,
+        temperature: this.options.temp,
+        num_predict: this.options.numPred,
+        num_ctx: this.options.ctx,
       },
       stream: true,
     });
+  }
+
+  abstract run(): Promise<void>;
+}
+
+class RawRunner extends BaseRunner {
+  protected handleError(message: string): void {
+    process.stderr.write(`${message}\n`);
+    process.exit(1);
+  }
+
+  async run(): Promise<void> {
+    const response = await this.createChatResponse();
 
     for await (const chunk of response) {
-      setBuffer((buffer: string) => buffer + chunk.message.content);
+      process.stdout.write(chunk.message.content);
+    }
+  }
+}
+
+type InteractiveRunnerProps = {
+  runner: InteractiveRunner;
+};
+
+class InteractiveRunner extends BaseRunner {
+  private setBuffer?: (buffer: string | ((prev: string) => string)) => void;
+
+  constructor(
+    prompt: string,
+    stdin: string | undefined,
+    options: RunOptions,
+    models: ModelResponse[]
+  ) {
+    super(prompt, stdin, options, models);
+
+    // Set up shutdown handler for interactive mode (with cursor reset)
+    const shutdown = () => {
+      process.stdout.write("\x1b[?25h"); // reset cursor
+      process.exit(0);
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("exit", shutdown);
+  }
+
+  protected handleError(message: string): void {
+    throw new Error(message);
+  }
+
+  setBufferSetter(
+    setBuffer: (buffer: string | ((prev: string) => string)) => void
+  ) {
+    this.setBuffer = setBuffer;
+  }
+
+  async run(): Promise<void> {
+    const response = await this.createChatResponse();
+
+    for await (const chunk of response) {
+      if (this.setBuffer) {
+        this.setBuffer((buffer: string) => buffer + chunk.message.content);
+      }
     }
   }
 
-  useEffect(() => {
-    run();
-  }, []);
+  getConversation() {
+    return this.conversation;
+  }
+}
 
-  if (options.raw || options.json) {
-    return <Text>{buffer}</Text>;
+const InteractiveRunnerComponent = ({ runner }: InteractiveRunnerProps) => {
+  const [buffer, setBuffer] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      runner.setBufferSetter(setBuffer);
+      runner.run().catch((err) => setError(err.message));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, [runner]);
+
+  if (error) {
+    return <Text>{error}</Text>;
   }
 
   return (
-    <Box flexDirection="column" flexWrap="wrap" width={options.printWidth}>
-      {options.whole && (
-        <Static items={conversation}>
+    <Box
+      flexDirection="column"
+      flexWrap="wrap"
+      width={runner["options"].printWidth}
+    >
+      {runner["options"].whole && (
+        <Static items={runner.getConversation()}>
           {(props, i) => (
-            <Message key={i} {...props} {...options}>
-              <Renderer {...props} />
+            <Message key={i} role={props.role} {...runner["options"]}>
+              <Renderer content={props.content} />
             </Message>
           )}
         </Static>
       )}
 
-      <Message key="buffer" role="assistant" {...options}>
+      <Message key="buffer" role="assistant" {...runner["options"]}>
         {buffer ? (
           <Renderer content={buffer} />
         ) : (
@@ -155,20 +244,35 @@ export default (ollamark: Command) =>
     .action(async (parts: string[], options: RunOptions) => {
       const models = await ollama.list();
       const stdin = await readTTYStream(process.stdin, !!options.html);
-      render(
-        <RunCommand
-          models={models.models}
-          stdin={
-            stdin ? { content: stdin, mime: await guessMime(stdin) } : undefined
-          }
-          prompt={parts.join(" ")}
-          options={{
-            ...options,
-            temp: Number(options.temp),
-            numPred: Number(options.numPred),
-            ctx: Number(options.ctx),
-            printWidth: Number(options.printWidth),
-          }}
-        />
+      const prompt = parts.join(" ");
+
+      const normalizedOptions = {
+        ...options,
+        temp: Number(options.temp),
+        numPred: Number(options.numPred),
+        ctx: Number(options.ctx),
+        printWidth: Number(options.printWidth),
+      };
+
+      // Handle raw mode without Ink to avoid ANSI codes
+      if (options.raw || options.json) {
+        const runner = new RawRunner(
+          prompt,
+          stdin,
+          normalizedOptions,
+          models.models
+        );
+        await runner.run();
+        return;
+      }
+
+      // Handle interactive mode with Ink
+      const runner = new InteractiveRunner(
+        prompt,
+        stdin,
+        normalizedOptions,
+        models.models
       );
+
+      render(<InteractiveRunnerComponent runner={runner} />);
     });

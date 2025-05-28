@@ -23,5 +23,4 @@ process.on("exit", shutdown);
 
 function shutdown() {
   ollama.abort();
-  process.stdout.write("\x1b[?25h"); // reset cursor
 }
