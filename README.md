@@ -65,6 +65,7 @@ Options:
 ### Examples
 
 ```bash
+
 # coding assistance
 ollamark -m magicoder "how to loop a javascript array"
 
