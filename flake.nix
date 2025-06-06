@@ -21,7 +21,7 @@
           name = "ollamark-deps";
           outputHashAlgo = "sha256";
           outputHashMode = "recursive";
-          outputHash = "sha256-vtJOQgt+JG4hUdCJ+5b/68OSqg01w4ATaNBj9C0M3ng=";
+          outputHash = "sha256-ungb8WnyOzCo1hECkKLAkgzvzAzym1CqoB5IAGLb9xs=";
 
           src = ./package.json;
 
