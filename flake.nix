@@ -16,19 +16,19 @@
         pkgs = nixpkgs.legacyPackages.${system};
         lib = pkgs.lib;
 
-        # Dependencies derivation - installs node_modules
         deps = pkgs.stdenvNoCC.mkDerivation {
           name = "ollamark-deps";
           outputHashAlgo = "sha256";
           outputHashMode = "recursive";
-          outputHash = "sha256-vtJOQgt+JG4hUdCJ+5b/68OSqg01w4ATaNBj9C0M3ng=";
+          outputHash = "sha256-GKgUW7U7zEMrzryfeIIIcpC1tTAYtx1eSr6PecekqIU=";
 
-          src = ./package.json;
+          src = ./.;
 
           dontUnpack = true;
 
           buildPhase = ''
-            cp $src package.json
+            cp $src/package.json .
+            cp $src/bun.lockb .
             ${lib.getExe pkgs.bun} install --frozen-lockfile
           '';
 
@@ -39,7 +39,6 @@
           '';
         };
 
-        # Build derivation - builds the application using the deps
         pkg = pkgs.stdenvNoCC.mkDerivation {
           name = "ollamark";
 
@@ -48,10 +47,7 @@
           src = ./.;
 
           buildPhase = ''
-            # Link dependencies
             ln -s ${deps}/node_modules ./node_modules
-
-            # Build the application
             ${lib.getExe pkgs.bun} run dist
           '';
 
