@@ -16,38 +16,18 @@
         pkgs = nixpkgs.legacyPackages.${system};
         lib = pkgs.lib;
 
-        deps = pkgs.stdenvNoCC.mkDerivation {
-          name = "ollamark-deps";
-          outputHashAlgo = "sha256";
-          outputHashMode = "recursive";
-          outputHash = "sha256-GKgUW7U7zEMrzryfeIIIcpC1tTAYtx1eSr6PecekqIU=";
-
-          src = ./.;
-
-          dontUnpack = true;
-
-          buildPhase = ''
-            cp $src/package.json .
-            cp $src/bun.lockb .
-            ${lib.getExe pkgs.bun} install --frozen-lockfile
-          '';
-
-          installPhase = ''
-            mkdir -p $out
-            cp -r node_modules $out/
-            rm -rf $out/node_modules/.bin
-          '';
-        };
-
         pkg = pkgs.stdenvNoCC.mkDerivation {
           name = "ollamark";
+          outputHashAlgo = "sha256";
+          outputHashMode = "recursive";
+          outputHash = "sha256-AFePRW+c100yZaPaQ94PjJNMSR7gBbP23kNGEZqSyfM=";
 
           nativeBuildInputs = [pkgs.installShellFiles];
 
           src = ./.;
 
           buildPhase = ''
-            ln -s ${deps}/node_modules ./node_modules
+            ${lib.getExe pkgs.bun} install
             ${lib.getExe pkgs.bun} run dist
           '';
 
